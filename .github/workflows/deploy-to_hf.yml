@@ -3,7 +3,7 @@ name: Deploy to Hugging Face Spaces
 on:
   push:
     branches:
-      - main  # ou master selon votre dépôt
+      - main
 
 jobs:
   deploy:
@@ -21,17 +21,32 @@ jobs:
         run: |
           pip install huggingface_hub
 
-      - name: Deploy to Hugging Face Spaces
+      - name: Clone HF Space repo
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SPACE_ID: ${{ secrets.SPACE_ID }}
         run: |
           echo "Clonage de l’espace Hugging Face : $SPACE_ID"
           git clone https://user:$HF_TOKEN@huggingface.co/spaces/$SPACE_ID hf-space
-          
+
+      - name: Copy files
+        run: |
           echo "Copie des fichiers locaux vers l’espace"
+          # On entre dans le dossier cloné
+          cd hf-space
+          # On supprime tout ce qu’il y a dedans (pour garder une sync propre)
+          git ls-files | xargs rm -f
+          # Retour au dossier racine
+          cd ..
+          # Copie sans le dossier hf-space lui-même
           cp -r . hf-space/
-          
+          # Suppression des fichiers inutiles pour éviter les conflits
+          rm -rf hf-space/.git hf-space/.github
+
+      - name: Commit & Push
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
           cd hf-space
           git add .
           git commit -m "Mise à jour via GitHub Actions"
