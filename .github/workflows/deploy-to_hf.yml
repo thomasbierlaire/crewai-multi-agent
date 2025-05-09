@@ -1,0 +1,38 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main  # ou master selon votre dépôt
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Install dependencies
+        run: |
+          pip install huggingface_hub
+
+      - name: Deploy to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SPACE_ID: ${{ secrets.SPACE_ID }}
+        run: |
+          echo "Clonage de l’espace Hugging Face : $SPACE_ID"
+          git clone https://user:$HF_TOKEN@huggingface.co/spaces/$SPACE_ID hf-space
+          
+          echo "Copie des fichiers locaux vers l’espace"
+          cp -r . hf-space/
+          
+          cd hf-space
+          git add .
+          git commit -m "Mise à jour via GitHub Actions"
+          git push origin main
